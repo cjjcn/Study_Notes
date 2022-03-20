@@ -1,12 +1,3 @@
----
-title: LeetCode - 做题笔记
-tags:
-  - leetcode
-  - 每日一题
-abbrlink: '2e627859'
-date: 2022-03-03 15:03:41
----
-
 这篇博客集中整理在LeetCode的刷题记录，方便查阅
 
 # [258. 各位相加 - 力扣（LeetCode） (leetcode-cn.com)](https://leetcode-cn.com/problems/add-digits/)
@@ -368,3 +359,58 @@ public:
     }
 };
 ```
+
+# [2039. 网络空闲的时刻 - 力扣（LeetCode） (leetcode-cn.com)](https://leetcode-cn.com/problems/the-time-when-the-network-becomes-idle/)
+
+## 思路
+
+可以将整个计算机网络视为一个无向图，服务器就是图中的节点，根据图中的边对应关系即可求出任意节点之间的距离，利用BFS先求出节点0到其他节点的最短距离，然后依次求出每个节点变为空闲的时间，当所有节点都变为空闲时，整个网络即变为空闲状态，因此网络的最早空闲时间即为各个节点中最晚的空闲时间。
+
+设节点v与节点0之间最短距离位dist，则此时当节点v接收到主服务器节点0的最后一个回复后的下一秒，节点v变为空闲状态。节点v发送一个消息经过dist秒到达节点0，节点0回复消息并由节点v接收，因此节点v每发送一次消息后，经过$2 \times dist$秒才能收到回复，由于节点v会周期性每`patience[v]`秒发送一次消息，因此需要分以下两种情况进行讨论：
+
+- 当$2 \times dist \leq patience[v]$时，则此时节点v还未开始发送第二次消息就已收到回复，因此节点v只会发送一次消息，此时节点v变为空闲时间为$2 \times dist+1$
+- 当$2\times dist>patience[v]$时，此时节点在等待第一次回复时就会开始重新发送消息，可知在$[1, 2\times dist)$时间范围内最多再次发送$\frac{2\times dist-1}{patience[i]}$次消息，最后一次发送消息的时间为$patience[v]\times \frac{2\times dist-1}{patience[v]}$，而节点每发送一次消息就会经过$2\times dist[v]$收到回复，因此节点v最后一次收到回复的时间为$patience[v]\times \frac{2\times dist-1}{patience[v]}+2\times dist$，则此时可知节点v变空闲时间为$patience[v]\times \frac{2\times dist-1}{patience[v]}+2\times dist+1$
+
+当$2 \times dist \leq patience[v]$时，$\frac{2\times dist-1}{patience[v]}=0$，因此以上两种情况可以进行合并。
+
+## 代码
+
+```c++
+class Solution {
+public:
+    int networkBecomesIdle(vector<vector<int>>& edges, vector<int>& patience) {
+        int n = patience.size();
+        vector<vector<int>> adj(n);
+        vector<bool> visit(n, false);
+        for(auto &v: edges)
+        {
+            adj[v[0]].emplace_back(v[1]);
+            adj[v[1]].emplace_back(v[0]);
+        }
+        //BFS
+        queue<int> qu;
+        qu.emplace(0);
+        visit[0]=true;
+        int dist = 1;
+        int ans = 0;
+        while(!qu.empty()){
+            int sz = qu.size();
+            for(int i=0;i<sz;i++)
+            {
+                int curr = qu.front();
+                qu.pop();
+                for(auto &v : adj[curr]){
+                    if(visit[v])    continue;
+                    qu.emplace(v);
+                    int time = patience[v] * ((2 * dist - 1) / patience[v]) + 2*dist + 1;
+                    ans = max(ans, time);
+                    visit[v]=true;
+                }
+            }
+            dist++;
+        }
+        return ans;
+    }
+};
+```
+

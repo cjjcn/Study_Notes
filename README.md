@@ -7,3 +7,5 @@ This repository is mainly used to store some of my personal notes and ideas, as 
 ## About me
 
 E-Mail: jiajchencn@outlook.com
+
+Blog: https://www.0error.net
