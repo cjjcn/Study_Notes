@@ -144,11 +144,12 @@ sort将文件的每一行作为一个单位，相互比较，比较原则是从�
 - ln 硬链接
 - -s 软链接
 
-## VIM
-![image](https://img2022.cnblogs.com/blog/1317599/202204/1317599-20220429201853323-432917606.png)
-![KeyBind](https://img2022.cnblogs.com/blog/1317599/202204/1317599-20220429203916105-1231791213.jpg)
+# VIM
+![vim](https://image.0error.net/img/20221317599-20220429201853323-432917606.png)
+![vim_KeyBind](https://image.0error.net/img/20221317599-20220429203916105-1231791213.jpg)
 
-# CMake
+# Linux C
+## CMake
 makefile示例
 ```makefile
 build: clean main
@@ -175,7 +176,7 @@ clean:
 
 .PHONY: clean build
 ```
-## GCC
+# GCC
 ### 编译顺序
 ```shell
 project
@@ -282,3 +283,157 @@ non-login shell与login shell读取的配置文件不一致
 login shell读取顺序/etc/profile->~/.bash_profile->~/.bashrc  
 non-login shell只读取/.bashrc
 #### 组合按键
+| 命令   | 效果         |
+| ------ | ------------ |
+| Ctrl+c | 终止当前命令 |
+| Ctrl+d | EOF          |
+| Ctrl+m | Enter        |
+| ctrl+s | 暂停输出     |
+| ctrl+q | 恢复输出     |
+| ctrl+u | 删除整行命令 |
+| ctrl+z | 暂停挂起命令 | 
+#### 通配符与特殊符号
+| 符号  | 意义                                                         |
+| ----- | ------------------------------------------------------------ |
+| *     | 代表任意长度的字符                                           |
+| ?     | 代表一个任意字符                                             |
+| [x]   | 代表一个括号内的所有字符（必须有，非任意）                   |
+| [a-z] | 代表有一个按括号内编码顺序的范围的一个字符（必须有，非任意） |
+| [\^x] | 代表一个非括号内的字符（字符串过滤）                                                             |
+#### 数据流的重定向
+数据重定向可以将stdin,stdout,stderr传送到不同的设备或位置  
+exec 1>stdin 2>stderr(>是覆盖，>>是追加)  
+2>/dev/null可以清除错误信息  
+2>&1可以将正确与错误信息写入同一个文件
+#### 命令运行的判断依据
+cmd1;cmd2连续命令下达，但是不考虑命令连续性即命令与命令之间可能乱序
+$?获取前一个命令的返回值 $?=0时即命令运行正确  
+cmd1 && cmd2 cmd2在cmd1运行完毕且正确时才运行  
+cmd1 || cmd2 cmd2在cmd1运行完毕但错误时才运行
+### Tunnel
+管道命令界定符号|  
+|仅能处理前一个命令的正确输出结果，无法直接输出错误结果
+#### 颉取命令
+颉取命令通常是以行为单位  
+cut -d 分隔符 -f 第几段  
+grep -v反向选择  
+grep -n输出行号  
+grep -i忽略大小写  
+常用如  
+cmd | grep -v pattren1 | grep pattern2
+#### 排序命令
+sort -t 分隔符 -k 第几个  
+uniq -c 去重计数  
+wc -l 行  
+wc -w 单词  
+wc -c 字符
+#### 双向重定向命令
+tee -a 追加  
+重定向一个副本至file中
+#### 字符转换命令
+tr -d 删除一个字符串  
+tr -s 取代重复字符  
+tr ‘[a-z]’’[A-Z]’ 实现大小写转换  
+tr -d '*'删除内容
+
+col 过滤控制字符  
+col -x 将tab换成空格  
+col -b 过滤所有控制符
+
+join -t 指定字段分隔符  
+join num 指定分析字段  
+join -1/2 指定分析文件  
+最好事先sort
+
+paste -d 指定分隔符，默认是tab  
+paste - 意为来自管道
+
+expand -t num 指定一个tab替代为多少个空格
+#### 分割命令
+split file PREFIX将文件按大小或行数进行分割  
+split -b 指定分割文件的最大大小  
+split -l 按行数分割  
+PREFIX为分割后的文件名的前导符
+#### 参数替换命令
+xargs cmd  
+xargs -p 提示  
+xargs -n 一组命令的量  
+xargs -e’\*’ 停止命令的标识  
+能够将一个不支持管道的命令，接受来自其他命令的stdout
+#### -号
+stdin与stdout可以通过-来替代
+# 正则表达式
+## 特殊字符
+egrep "" filename
+| 符号    | 说明                                         |
+| ------- | -------------------------------------------- |
+| ^       | \^word word在行首                            |
+| $       | word$ word在行尾                             |
+| .       | 一定有一个任意字符                           |
+| \       | 将特殊字符转义为一般符号                     |
+| *       | 重复前一个字符，0到无穷多个.\*即为任意字符串 |
+| [\^]    | 舍去或欲求的字符集合                         |
+| [n1-n2] | 欲求的字符范围                               |
+| {n,m}   | 连续n到m个的前一个字符                       |
+| +       | 一个或一个以上                               |
+| \?      | 0个或1个                                     |
+| \|      | 或                                           |
+| ()      | 组群                                             |
+# 文件格式化与处理
+sed -n 安静模式  
+sed -i 直接修改文件内容  
+sed -f 写入文件  
+动作:[n1],[n2]funnction n1,n2为动作施加行  
+function:a之下追加,c取代,d删除,i之上插入,p打印选择的数据,s替换 如sed ‘2,5d’  
+sed s/‘pt1’/‘pt2’/g 全局替换
+
+awk -F 指定分隔符 
+```shell
+awk -F ’ ’ ‘$3<10{print $1 “\t” $3}’
+```
+diff -Naur oldfile newfile > patch  
+patch -p0 < patch(oldfile->newfile)  
+patch -R -p0 <patch(oldfile->newfile->oldfile)
+# Shell编程
+## 特征
+纯文本，从上往下，从左到右  
+\可以延伸至下一行  
+/#为注释  
+/#!/bin/bash  
+$((运算内容))
+## test
+test -e dictory
+## $特例
+\$\# 参数个数  
+$@ 输入参数  
+$n 第n个参数
+## 循环
+```shell
+if [ * ]; then
+    do sth
+elif [ * ]; then
+    do sth
+else
+    do sth
+fi
+
+while [ * ]
+do
+    do sth
+done
+
+until [ * ]
+do
+    do sth
+done
+
+for i in $(seq 1 100)
+do
+    do sth
+done
+
+for (( i=0; i<=100; i=i+1 ))
+do
+    do sth
+done
+```
