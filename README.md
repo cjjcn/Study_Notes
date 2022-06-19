@@ -7,7 +7,7 @@ The original Do1phln's blog. because the web version is not easy to take care of
 
 ## 博客地址/Blog address
 
-- [Do1phln - 博客园 (cnblogs.com)](https://www.cnblogs.com/cjjcn)
+- [Do1phln's blog](https://www.yuque.com/do1phln/blog)
 - [Do1phln的博客_CSDN博客](https://blog.csdn.net/Do1phln)
 
 ## 和我联系/Contact me
